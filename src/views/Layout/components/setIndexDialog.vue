@@ -59,6 +59,8 @@ const tableData = ref([]);
  * 查询方案
  */
 const getSchema = async () => {
+  console.log(store.workspaceData.id);
+  
   const params = {
     workspaceId: store.workspaceData.id,
     skip: 0,
