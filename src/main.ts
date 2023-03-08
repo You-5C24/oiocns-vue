@@ -27,6 +27,8 @@ declare module "vue" {
 // import '@/assets/style/element.dark.scss'
 // import 'element-plus/theme-chalk/dark/css-vars.css'
 
+import 'devextreme/dist/css/dx.light.css';
+
 import '@/assets/style/app.scss'
 import "element-plus/theme-chalk/src/loading.scss";
 import "element-plus/theme-chalk/src/message.scss";
@@ -36,6 +38,11 @@ import "element-plus/theme-chalk/src/message-box.scss";
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import ElementPlus from 'element-plus'
 import VueGridLayout from 'vue-grid-layout'
+
+// @ts-ignore
+import VForm3 from '@/../lib/vform/designer.umd.js'
+import '../lib/vform/designer.style.css'
+import 'element-plus/dist/index.css'
 
 
 // 下面是我们安装的固化插件。
@@ -56,6 +63,7 @@ app.use(pinia)
 app.use(VueGridLayout)
 setupRouter(app)
 app.use(ElementPlus)
+app.use(VForm3)
 // app.use(ElementPlus, {locale}) //国内
 // await router.isReady()
 

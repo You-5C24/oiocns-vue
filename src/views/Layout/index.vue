@@ -1,13 +1,13 @@
 <template>
   <el-container class="pages home-wrap">
     <!-- 头 -->
-    <el-header class="page-header" >
+    <el-header v-if="!$route.meta.noHeader" class="page-header" >
       <CustomHeadr />
     </el-header>
     <el-container>
       <!-- 主导航 -->
       <div class="menu-list" v-show="showMenu">
-        <MenuNav :data="menuArr.state" :titleData="titleArr.state" :btnType="btnType"></MenuNav>
+        <MenuNav :data="menuArr.state" :titleData="titleArr.state" :btnType="btnType" @clickTabs="clickTabs"></MenuNav>
       </div>
       <div class="layout-main" >
           <!-- 面包屑 -->
@@ -58,6 +58,7 @@
   import LoadingVue from './components/loading.vue'
   import { useUserStore } from '@/store/user'
   import { setCenterStore } from '@/store/setting'
+  const settingStore:any = setCenterStore()
   import authority from '@/utils/authority'
   import { onBeforeMount, onBeforeUnmount,reactive,watch,ref,nextTick,getCurrentInstance, onMounted} from 'vue'
   import { RouteLocationNormalizedLoaded, useRouter } from 'vue-router';
@@ -66,7 +67,7 @@
   import setTree from './json/setTree.json';
   // import serviceJson from './json/service.json';
   // import userJosn from './json/user.json';
-  import { appCtrl,userCtrl,thingCtrl,marketCtrl,INullSpeciesItem, todoCtrl as todo } from '@/ts/coreIndex';
+  import { appCtrl,userCtrl,thingCtrl,marketCtrl,INullSpeciesItem, todoCtrl as todo, docsCtrl } from '@/ts/coreIndex';
   import { createAllMenuTree, MenuDataItem, findMenu } from "./json/MenuData";
   import { getAllNodes } from '@/utils/tree'
   import { anystore } from '@/hubs/anystore'
@@ -80,10 +81,11 @@
   const menuText = ref<string>('')
   const menuTree = ref(createAllMenuTree());
   const allMenuItems = ref(getAllNodes(menuTree.value));
+  let activeIndex = ref<string>('1')
   
   onMounted(() => {
     todo.subscribe(async () => {
-      return
+      return false;
       console.warn("触发全局订阅回调");
 
       const header = allMenuItems.value.find(m => m.id == "service");
@@ -113,44 +115,49 @@
     if(router.currentRoute.value.path.indexOf('setCenter') != -1){
       if (router.currentRoute.value.name === 'department') {
           titleArr.state= {icon: 'User',title: '部门设置',"backFlag": true}
-          setCenterStore().GetDepartmentInfo().then((treeData)=> {
-            let newData: any = [
-              {
-                label: '部门管理',
-                structure: true,
-                id: 1,
-                query: true,
-                isPenultimate: true,
-                btns:[{
-                  name: '新增部门',
-                  id: '2203'
-                }],
-                children: treeData
-              }
-            ]
-            menuArr.state = newData
-          })
-          showMenu.value = true;
+          setTimeout(()=>{
+            setCenterStore().GetDepartmentInfo().then((treeData)=> {
+              let newData: any = [
+                {
+                  label: '部门管理',
+                  structure: true,
+                  id: 1,
+                  query: true,
+                  isPenultimate: true,
+                  btns:[{
+                    name: '新增部门',
+                    id: '2203'
+                  }],
+                  children: treeData
+                }
+              ]
+              menuArr.state = newData
+            })
+            showMenu.value = true;
+          },500)
           return;
       } else if (router.currentRoute.value.name === 'post') {
           titleArr.state= {icon: 'User',title: '岗位设置',"backFlag": true}
-          setCenterStore().GetIdentities().then((treeData)=> {
-            let newData: any = [
-              {
-                label: '岗位管理',
-                structure: true,
-                id: 1,
-                query: true,
-                isPenultimate: true,
-                btns:[{
-                  name: '新增岗位',
-                  id: '2008'
-                }],
-                children: treeData
-              }
-            ]
-            menuArr.state = newData
-          })
+          setTimeout(()=>{
+            setCenterStore().GetIdentities().then((treeData)=> {
+              console.log(treeData)
+              let newData: any = [
+                {
+                  label: '岗位管理',
+                  structure: true,
+                  id: 1,
+                  query: true,
+                  isPenultimate: true,
+                  btns:[{
+                    name: '新增岗位',
+                    id: '2008'
+                  }],
+                  children: treeData
+                }
+              ]
+              menuArr.state = newData
+            })
+          },500)
           showMenu.value = true;
           return;
       }else if (router.currentRoute.value.name === 'group') {
@@ -167,8 +174,8 @@
         }
       }
     }
-    // start-文档相关
-    if (router.currentRoute.value.name === 'cloud') {
+    // start-文档/物相关
+    if (router.currentRoute.value.name === 'cloud' || router.currentRoute.value.name === 'thing') {
       showMenu.value = false;
       return;
     }
@@ -177,7 +184,8 @@
     // start-标准设置相关
     if (router.currentRoute.value.path.indexOf('setCenter/standard') != -1) {
       titleArr.state = {icon: 'PriceTag',title: '标准设置', "backFlag": true}
-      getStandardSpecies()
+      // getStandardSpecies()
+      loadSpeciesSetting()
       showMenu.value = true;
       return;
     }
@@ -220,7 +228,7 @@
     showMenu.value = true;
   }
   let router = useRouter()
-  console.log(router.currentRoute.value.path);
+  // console.log(router.currentRoute.value.path);
 
   let titleArr = reactive<any>({state:{btnList:[]}});
   let menuArr = reactive({
@@ -246,13 +254,17 @@
       return data;
     }
   };
+
+  const clickTabs = (num:string) =>{
+    getMenu()
+  }
+
   // 获取商店分类
-  const getMenu = () => {
-      const id = appCtrl.subscribePart('STORE_MENU', () => {
-        //   setCustomMenu([...appCtrl.spacies]);
-            // console.log('appCtrl.spacies',appCtrl.spacies)
-      });
-    
+  const getMenu = async() => {
+    const id = appCtrl.subscribePart('STORE_MENU', () => {
+      //   setCustomMenu([...appCtrl.spacies]);
+          // console.log('appCtrl.spacies',appCtrl.spacies)
+    });
     
     console.log('id',id)
     // return () => {
@@ -260,14 +272,23 @@
     // };
     // anystore.subscribed('STORE_MENU'+store.workspaceData.id, 'user', (data) => {
     //   console.log('dataaa',data)
-      let newJSON = JSON.parse(JSON.stringify(storeJson))
+    let newJSON = JSON.parse(JSON.stringify(storeJson))
     //     if(data?.data?.species.length>0){
     //       menuData.data = data.data.species;          
     //       dataFilter(menuData.data)
     //       newJSON[2].children = menuData.data;
     //     }
-        titleArr.state = newJSON[0]
-        menuArr.state = newJSON
+    titleArr.state = newJSON[0]
+    menuArr.state = newJSON
+    // return species? buildSpeciesTree(species)
+    //   : {
+    //       children: [] as string[],
+    //       key: '物',
+    //       label: '物',
+    //       itemType: '物',
+    //       item: userCtrl.space,
+    //       icon: '',
+    //     }
     //     btnType.value = 'STORE_USER_MENU'
     // })
   }
@@ -356,7 +377,7 @@
     structure: boolean
     label: string
   }
-  const getStandardSpecies = ()=>{
+  const getStandardSpecies = async()=>{
     const teamSpecies: SpeciesObject = thingCtrl.teamSpecies as SpeciesObject
     if(teamSpecies) {
       teamSpecies.structure = true
@@ -366,6 +387,7 @@
       function treeLabel(arr: any[]) {
         arr.forEach((el) => {
           el.label = el.name
+          el.btns = [{name: '新增分类',id: '2204'}]
           delete el.parent
           treeLabel(el.children || [])
         })
@@ -374,6 +396,26 @@
       menuArr.state = []
     }
   }
+
+  const loadSpeciesSetting = async () => {
+    const species = await userCtrl.space.loadSpeciesTree();
+    if (species) {
+      const treeData = [species]
+      treeData[0].structure = true
+      treeLabel(treeData)
+      menuArr.state = treeData
+      function treeLabel(arr: any[]) {
+        arr.forEach((el) => {
+          el.label = el.name
+          el.btns = [{name: '新增分类',id: '2204'}]
+          delete el.parent
+          treeLabel(el.children || [])
+        })
+      }
+    }else{
+      menuArr.state = []
+    }
+  };
   
   // 获取我的商店列表
   const getShopList = async ()=>{
@@ -407,7 +449,6 @@
     titleArr.state = {icon: 'User',title: '商店', "backFlag": true}
     menuArr.state = shopstoreJson
     })
-    
   }
   // const getNav = ()=>{
   //     if(router.currentRoute.value.path.indexOf('store') != -1){    

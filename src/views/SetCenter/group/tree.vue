@@ -94,7 +94,7 @@ import { useUserStore } from '@/store/user'
 import {userCtrl} from '@/ts/coreIndex';
 import { setCenterStore } from '@/store/setting'
 import CreateTeamModal from '../GlobalComps/createTeam.vue';
-const store = useUserStore()
+const store:any = useUserStore()
 const goBack = () => {
   window.history.go(-1)
 }
@@ -232,8 +232,9 @@ let myGroupList: any = []
 let addGroupList: any = []
 
 // 查询集团列表
-const getGroupList = async() => {
-  const groups = await userCtrl.company.getJoinedGroups(false);
+const getGroupList = () => {
+  setTimeout(async()=>{
+    const groups = await userCtrl.company.getJoinedGroups(false);
     myGroupList = []
     addGroupList = []
     groups.length && groups.forEach((item: any) => {
@@ -274,7 +275,9 @@ const getGroupList = async() => {
       return { value: g.id, label: g.name }
     })
     orgTree.value.length && emit('nodeClick', orgTree.value[0]?.children[0])
-    nodeClick(orgTree.value[0]?.children[0])
+    // nodeClick(orgTree.value[0]?.children[0])
+  },500)
+
 }
 
 const nodeClick = (val: any, nodeAttribute?: any, event?: any) => {
@@ -405,14 +408,14 @@ watch(filterText, (val) => {
 }
 // 去掉el-input自带边框
 :deep(.search .el-input__wrapper) {
-    margin: 15px;
-    padding-left: 15px !important;
-    box-sizing: border-box;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0px; //前边边距去掉
-    border-radius: 15px;
-    background: #f2f4f9;
+    // margin: 15px;
+    // padding-left: 15px !important;
+    // box-sizing: border-box;
+    // border: none !important;
+    // box-shadow: none !important;
+    // padding: 0px; //前边边距去掉
+    // border-radius: 15px;
+    // background: #f2f4f9;
   }
 </style>
 
